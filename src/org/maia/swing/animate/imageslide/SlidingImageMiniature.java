@@ -89,7 +89,7 @@ public class SlidingImageMiniature extends JPanel {
 	}
 
 	private void paintCorner(Graphics2D g) {
-		g.setColor(ColorUtils.adjustBrightness(getBackground(), 0.1));
+		g.setColor(ColorUtils.adjustBrightness(getBackground(), 0.1f));
 		int h = getHeight();
 		int t = Math.min((int) Math.round(h * 0.1), 16);
 		g.fillPolygon(new int[] { 0, 0, t }, new int[] { h - t, h, h }, 3);
@@ -111,7 +111,7 @@ public class SlidingImageMiniature extends JPanel {
 		Insets pad = getPadding();
 		int innerWidth = getWidth() - pad.left - pad.right;
 		int innerHeight = getHeight() - pad.top - pad.bottom;
-		g.setColor(ColorUtils.setTransparency(getBackground(), 0.4));
+		g.setColor(ColorUtils.setTransparency(getBackground(), 0.4f));
 		g.fillRect(pad.left, pad.top, innerWidth, innerHeight);
 	}
 

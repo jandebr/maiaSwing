@@ -91,7 +91,7 @@ public class SlidingItemListOutlineView extends JComponent {
 	}
 
 	protected SlidingItemListOutlineRenderer createDefaultExtentRenderer() {
-		return new SolidFillOutlineRenderer(ColorUtils.adjustBrightness(getComponent().getBackground(), 0.2));
+		return new SolidFillOutlineRenderer(ColorUtils.adjustBrightness(getComponent().getBackground(), 0.2f));
 	}
 
 	protected SlidingItemListOutlineRenderer createDefaultCursorRenderer() {
