@@ -25,7 +25,7 @@ public class SlidingCursorFactory {
 		return new SolidOutlineCursor(color, thickness, spacing, roundedCorners);
 	}
 
-	private static class SolidOutlineCursor implements SlidingCursor {
+	public static class SolidOutlineCursor implements SlidingCursor {
 
 		private Color color;
 
