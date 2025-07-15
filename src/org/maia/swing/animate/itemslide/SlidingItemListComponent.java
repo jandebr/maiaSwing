@@ -24,9 +24,9 @@ import org.maia.swing.animate.itemslide.impl.SlidingShadeDynamicsFactory;
 import org.maia.swing.animate.itemslide.impl.SlidingState;
 import org.maia.swing.animate.itemslide.outline.SlidingItemListOutline;
 import org.maia.swing.animate.itemslide.outline.SlidingItemListOutline.Range;
+import org.maia.swing.animate.itemslide.outline.SlidingItemListOutlineView;
 import org.maia.swing.layout.Orientation;
 import org.maia.swing.layout.VerticalAlignment;
-import org.maia.swing.animate.itemslide.outline.SlidingItemListOutlineView;
 import org.maia.util.GenericListenerList;
 
 public class SlidingItemListComponent extends BaseAnimatedComponent implements KeyListener {
@@ -521,6 +521,16 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 			}
 		}
 		return length;
+	}
+
+	public Rectangle getItemBoundsInComponent(SlidingItem item) {
+		return getItemBoundsInComponent(getItemList().getIndexOf(item));
+	}
+
+	public Rectangle getItemBoundsInComponent(int index) {
+		Rectangle bounds = getItemBoundsInViewportCoords(getItemInList(index));
+		bounds.translate(getPadding().left, getPadding().top);
+		return bounds;
 	}
 
 	protected Rectangle getItemListBoundsInViewportCoords() {
