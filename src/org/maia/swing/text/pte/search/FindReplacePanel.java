@@ -8,10 +8,6 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Vector;
 
@@ -19,12 +15,14 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import org.maia.graphics2d.image.ImageUtils;
+import org.maia.swing.input.TextHistoryInputField;
+import org.maia.swing.input.TextHistoryInputFieldListener;
+import org.maia.swing.input.TextSearchInputField;
+import org.maia.swing.input.TextSearchInputFieldListener;
 import org.maia.swing.text.pte.PlainTextDocumentEditor;
 
 @SuppressWarnings("serial")
@@ -32,9 +30,9 @@ public class FindReplacePanel extends JPanel {
 
 	private List<FindReplacePanelListener> listeners;
 
-	private JComboBox<String> searchField;
+	private TextSearchInputField searchField;
 
-	private JComboBox<String> replaceField;
+	private TextHistoryInputField replaceField;
 
 	private JCheckBox caseSensitiveCheckBox;
 
@@ -50,8 +48,6 @@ public class FindReplacePanel extends JPanel {
 
 	private JButton replaceAllButton;
 
-	private JLabel searchActionLabel;
-
 	private JLabel resultsLabel;
 
 	private PlainTextDocumentEditor documentEditor;
@@ -63,8 +59,6 @@ public class FindReplacePanel extends JPanel {
 	private TextSearchResultStyling searchResultStyling;
 
 	private boolean searchResultReplaced;
-
-	public static int FIELD_HISTORY_MAX_ITEMS = 10;
 
 	public FindReplacePanel() {
 		super(new BorderLayout());
@@ -78,39 +72,39 @@ public class FindReplacePanel extends JPanel {
 		this.previousButton = createPreviousButton();
 		this.replaceButton = createReplaceButton();
 		this.replaceAllButton = createReplaceAllButton();
-		this.searchActionLabel = createSearchActionLabel();
 		this.resultsLabel = createResultsLabel();
 		buildUI();
 	}
 
-	private JComboBox<String> createSearchField() {
-		final JComboBox<String> field = new JComboBox<String>();
-		field.setEditable(true);
-		field.getEditor().getEditorComponent().addKeyListener(new EscapeKeyListener());
-		field.addActionListener(new ActionListener() {
+	private TextSearchInputField createSearchField() {
+		TextSearchInputField field = TextSearchInputField.createFieldWithHistory();
+		field.addListener(new TextSearchInputFieldListener() {
 
 			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (e.getActionCommand().equals("comboBoxChanged")) {
-					addValueToFieldHistory(field, field.getSelectedItem().toString());
-					performSearch();
-				}
+			public void textSearchStringChanged(TextSearchInputField inputField) {
+				performSearch();
+			}
+
+			@Override
+			public void textSearchEscaped(TextSearchInputField inputField) {
+				fireEscape();
 			}
 		});
 		return field;
 	}
 
-	private JComboBox<String> createReplaceField() {
-		final JComboBox<String> field = new JComboBox<String>();
-		field.setEditable(true);
-		field.getEditor().getEditorComponent().addKeyListener(new EscapeKeyListener());
-		field.addActionListener(new ActionListener() {
+	private TextHistoryInputField createReplaceField() {
+		TextHistoryInputField field = new TextHistoryInputField();
+		field.addListener(new TextHistoryInputFieldListener() {
 
 			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (e.getActionCommand().equals("comboBoxChanged")) {
-					addValueToFieldHistory(field, field.getSelectedItem().toString());
-				}
+			public void textHistoryValueChanged(TextHistoryInputField inputField) {
+				// no action
+			}
+
+			@Override
+			public void textHistoryEscaped(TextHistoryInputField inputField) {
+				fireEscape();
 			}
 		});
 		return field;
@@ -201,20 +195,6 @@ public class FindReplacePanel extends JPanel {
 		return button;
 	}
 
-	private JLabel createSearchActionLabel() {
-		final JLabel label = new JLabel(ImageUtils.getIcon("org/maia/swing/icons/text/search16.png"));
-		label.setToolTipText("Search");
-		label.addMouseListener(new MouseAdapter() {
-
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				label.grabFocus(); // trigger ActionEvent on search field and perform search
-			}
-
-		});
-		return label;
-	}
-
 	private JLabel createResultsLabel() {
 		JLabel label = new JLabel("no matches");
 		label.setFont(label.getFont().deriveFont(Font.ITALIC));
@@ -241,9 +221,7 @@ public class FindReplacePanel extends JPanel {
 		c.gridx++;
 		c.weightx = 1.0;
 		panel.add(getSearchField(), c);
-		c.gridx++;
 		c.weightx = 0;
-		panel.add(getSearchActionLabel(), c);
 		c.gridy++;
 		c.gridx = 0;
 		panel.add(new JLabel("Replace with"), c);
@@ -294,7 +272,7 @@ public class FindReplacePanel extends JPanel {
 		setSearchResultStyling(documentEditor.createDefaultSearchResultStyling());
 		clearSearchResult();
 		repeatSearch();
-		getSearchField().getEditor().selectAll();
+		getSearchField().selectSearchStringForEditing();
 	}
 
 	public void end() {
@@ -383,8 +361,8 @@ public class FindReplacePanel extends JPanel {
 
 	protected void repeatSearch() {
 		String searchStr = getSearchString();
-		getSearchField().setSelectedItem("");
-		getSearchField().setSelectedItem(searchStr);
+		getSearchField().setSearchString("");
+		getSearchField().setSearchString(searchStr);
 	}
 
 	protected void clearSearchResult() {
@@ -431,20 +409,6 @@ public class FindReplacePanel extends JPanel {
 		getResultsLabel().setText(text);
 	}
 
-	private void addValueToFieldHistory(JComboBox<String> field, String value) {
-		if (!value.isEmpty()) {
-			boolean currentValue = field.getSelectedItem().toString().equals(value);
-			field.removeItem(value);
-			field.insertItemAt(value, 0);
-			while (field.getItemCount() > FIELD_HISTORY_MAX_ITEMS) {
-				field.removeItemAt(field.getItemCount() - 1);
-			}
-			if (currentValue) {
-				field.setSelectedItem(value);
-			}
-		}
-	}
-
 	private void fireEscape() {
 		for (FindReplacePanelListener listener : getListeners()) {
 			listener.notifyEscape();
@@ -457,11 +421,11 @@ public class FindReplacePanel extends JPanel {
 	}
 
 	protected String getSearchString() {
-		return getSearchField().getEditor().getItem().toString();
+		return getSearchField().getSearchString();
 	}
 
 	protected String getReplacementString() {
-		return getReplaceField().getEditor().getItem().toString();
+		return getReplaceField().getTextValue();
 	}
 
 	protected boolean isCaseSensitive() {
@@ -480,11 +444,11 @@ public class FindReplacePanel extends JPanel {
 		return listeners;
 	}
 
-	protected JComboBox<String> getSearchField() {
+	protected TextSearchInputField getSearchField() {
 		return searchField;
 	}
 
-	protected JComboBox<String> getReplaceField() {
+	protected TextHistoryInputField getReplaceField() {
 		return replaceField;
 	}
 
@@ -514,10 +478,6 @@ public class FindReplacePanel extends JPanel {
 
 	protected JButton getReplaceAllButton() {
 		return replaceAllButton;
-	}
-
-	protected JLabel getSearchActionLabel() {
-		return searchActionLabel;
 	}
 
 	protected JLabel getResultsLabel() {
@@ -562,20 +522,6 @@ public class FindReplacePanel extends JPanel {
 
 	private void setSearchResultReplaced(boolean replaced) {
 		this.searchResultReplaced = replaced;
-	}
-
-	private class EscapeKeyListener extends KeyAdapter {
-
-		public EscapeKeyListener() {
-		}
-
-		@Override
-		public void keyPressed(KeyEvent e) {
-			if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-				fireEscape();
-			}
-		}
-
 	}
 
 }

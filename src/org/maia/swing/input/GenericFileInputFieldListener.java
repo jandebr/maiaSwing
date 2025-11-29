@@ -1,4 +1,4 @@
-package org.maia.swing.file;
+package org.maia.swing.input;
 
 public interface GenericFileInputFieldListener {
 

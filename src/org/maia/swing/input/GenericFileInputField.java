@@ -1,11 +1,10 @@
-package org.maia.swing.file;
+package org.maia.swing.input;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -15,7 +14,6 @@ import java.util.Vector;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.Icon;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -24,6 +22,7 @@ import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileFilter;
 
 import org.maia.graphics2d.image.ImageUtils;
+import org.maia.swing.button.IconActionButton;
 
 @SuppressWarnings("serial")
 public abstract class GenericFileInputField extends JPanel {
@@ -123,15 +122,13 @@ public abstract class GenericFileInputField extends JPanel {
 	}
 
 	private IconActionButton createFileClearButton() {
-		IconActionButton button = new IconActionButton(ImageUtils.getIcon("org/maia/swing/icons/clear16.png"));
+		IconActionButton button = new IconActionButton(getClearIcon(), new FileClearActionHandler());
 		button.setToolTipText("Clear");
-		button.addActionListener(new FileClearActionHandler());
 		return button;
 	}
 
 	private IconActionButton createFileChooserButton() {
-		IconActionButton button = new IconActionButton(getFileChooserIcon());
-		button.addActionListener(new FileChooserActionHandler());
+		IconActionButton button = new IconActionButton(getFileChooserIcon(), new FileChooserActionHandler());
 		button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		return button;
 	}
@@ -153,6 +150,10 @@ public abstract class GenericFileInputField extends JPanel {
 		} else {
 			return file.getName();
 		}
+	}
+
+	protected Icon getClearIcon() {
+		return ImageUtils.getIcon("org/maia/swing/icons/clear16.png");
 	}
 
 	protected abstract Icon getFileChooserIcon();
@@ -241,19 +242,6 @@ public abstract class GenericFileInputField extends JPanel {
 
 	protected List<GenericFileInputFieldListener> getInputFieldListeners() {
 		return inputFieldListeners;
-	}
-
-	private static class IconActionButton extends JButton {
-
-		public IconActionButton(Icon icon) {
-			super(icon);
-			setContentAreaFilled(false);
-			setOpaque(false);
-			setFocusPainted(false);
-			setBorderPainted(false);
-			setMargin(new Insets(0, 0, 0, 0));
-		}
-
 	}
 
 	private class FileChooserActionHandler implements ActionListener {
