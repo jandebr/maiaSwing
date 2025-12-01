@@ -404,6 +404,11 @@ public class PlainTextDocumentEditor implements PlainTextDocumentListener {
 	}
 
 	public boolean type(String str) {
+		if (hasSelectedText()) {
+			int selStart = getTextArea().getSelectionStart();
+			int selEnd = getTextArea().getSelectionEnd();
+			removeTextSpan(selStart, selEnd - selStart);
+		}
 		return insertStringAtCaret(str, true);
 	}
 

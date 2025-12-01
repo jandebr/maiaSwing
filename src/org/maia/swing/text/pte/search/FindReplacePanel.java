@@ -360,9 +360,7 @@ public class FindReplacePanel extends JPanel {
 	}
 
 	protected void repeatSearch() {
-		String searchStr = getSearchString();
-		getSearchField().setSearchString("");
-		getSearchField().setSearchString(searchStr);
+		getSearchField().setSearchString(getSearchString());
 	}
 
 	protected void clearSearchResult() {
