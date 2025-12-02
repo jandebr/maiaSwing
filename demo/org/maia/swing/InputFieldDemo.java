@@ -111,13 +111,12 @@ public class InputFieldDemo {
 	}
 
 	private static TextSearchInputField createTextSearchInputField() {
-		TextSearchInputField field = TextSearchInputField.createFieldWithHistory(3);
+		TextSearchInputField field = TextSearchInputField.createFieldWithHistory();
 		field.setSearchCommand(new TextSearchInputCommand() {
 
 			@Override
 			public void execute(TextSearchInputField inputField) {
-				String text = inputField.getSearchString();
-				System.out.println("SEARCH *" + text + "*");
+				System.out.println("SEARCH \"" + inputField.getSearchString() + "\"");
 			}
 		});
 		return field;

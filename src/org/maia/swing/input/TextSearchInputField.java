@@ -3,6 +3,7 @@ package org.maia.swing.input;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
@@ -13,6 +14,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Vector;
 
+import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -26,7 +29,11 @@ import org.maia.util.AsyncSerialTaskWorker.AsyncTask;
 @SuppressWarnings("serial")
 public abstract class TextSearchInputField extends JPanel {
 
+	private boolean includeClearButton;
+
 	private JComponent searchField;
+
+	private IconActionButton clearButton;
 
 	private IconActionButton searchButton;
 
@@ -40,26 +47,42 @@ public abstract class TextSearchInputField extends JPanel {
 
 	public static int MINIMUM_WIDTH = 240;
 
-	protected TextSearchInputField() {
-		super(new BorderLayout(4, 0));
+	protected TextSearchInputField(boolean includeClearButton) {
+		super(new BorderLayout());
+		this.includeClearButton = includeClearButton;
 		this.searchField = createSearchField();
 		this.searchButton = createSearchButton();
+		if (includeClearButton) {
+			this.clearButton = createClearButton();
+		}
 		this.inputFieldListeners = new Vector<TextSearchInputFieldListener>();
 		addListener(new SearchCommandController());
 		buildUI();
 	}
 
 	public static TextSearchInputField createField() {
-		return new SimpleTextSearchInputField();
+		return createField(true);
+	}
+
+	public static TextSearchInputField createField(boolean includeClearButton) {
+		return new SimpleTextSearchInputField(includeClearButton);
 	}
 
 	public static TextSearchInputField createFieldWithHistory() {
-		return createFieldWithHistory(TextHistoryInputField.defaultMaximumHistoricalValues);
+		return createFieldWithHistory(true);
+	}
+
+	public static TextSearchInputField createFieldWithHistory(boolean includeClearButton) {
+		return createFieldWithHistory(includeClearButton, TextHistoryInputField.defaultMaximumHistoricalValues);
 	}
 
 	public static TextSearchInputField createFieldWithHistory(int maximumHistoricalValues) {
+		return createFieldWithHistory(true, maximumHistoricalValues);
+	}
+
+	public static TextSearchInputField createFieldWithHistory(boolean includeClearButton, int maximumHistoricalValues) {
 		HistoryTextSearchInputField.maximumHistoricalValues = maximumHistoricalValues;
-		return new HistoryTextSearchInputField();
+		return new HistoryTextSearchInputField(includeClearButton);
 	}
 
 	public void addListener(TextSearchInputFieldListener listener) {
@@ -71,6 +94,19 @@ public abstract class TextSearchInputField extends JPanel {
 	}
 
 	protected abstract JComponent createSearchField();
+
+	protected IconActionButton createClearButton() {
+		IconActionButton button = new IconActionButton(getClearIcon(), new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setSearchString("");
+			}
+		});
+		button.setToolTipText("Clear");
+		button.setEnabled(false);
+		return button;
+	}
 
 	protected IconActionButton createSearchButton() {
 		IconActionButton button = new IconActionButton(getSearchIcon(), new ActionListener() {
@@ -88,11 +124,22 @@ public abstract class TextSearchInputField extends JPanel {
 
 	private void buildUI() {
 		add(getSearchField(), BorderLayout.CENTER);
-		add(getSearchButton(), BorderLayout.EAST);
+		add(buildActionsComponent(), BorderLayout.EAST);
 		if (getMinimumSize().width < MINIMUM_WIDTH) {
 			setMinimumSize(new Dimension(MINIMUM_WIDTH, getMinimumSize().height));
 			setPreferredSize(getMinimumSize());
 		}
+	}
+
+	protected JComponent buildActionsComponent() {
+		Box box = Box.createHorizontalBox();
+		if (isIncludeClearButton()) {
+			box.add(getClearButton());
+			box.add(Box.createHorizontalStrut(2));
+		}
+		box.add(Box.createHorizontalStrut(2));
+		box.add(getSearchButton());
+		return box;
 	}
 
 	@Override
@@ -100,6 +147,13 @@ public abstract class TextSearchInputField extends JPanel {
 		super.setEnabled(enabled);
 		getSearchField().setEnabled(enabled);
 		getSearchButton().setEnabled(enabled);
+		updateClearEnablement();
+	}
+
+	private void updateClearEnablement() {
+		if (isIncludeClearButton()) {
+			getClearButton().setEnabled(isEnabled() && !getSearchString().isEmpty());
+		}
 	}
 
 	protected void submitSearch() {
@@ -109,6 +163,7 @@ public abstract class TextSearchInputField extends JPanel {
 			setPreviousSearchString(current);
 			fireSearchStringChanged();
 		}
+		updateClearEnablement();
 	}
 
 	protected void escapeSearch() {
@@ -139,12 +194,24 @@ public abstract class TextSearchInputField extends JPanel {
 
 	protected abstract void replaceSearchString(String value);
 
+	protected Icon getClearIcon() {
+		return ImageUtils.getIcon("org/maia/swing/icons/clear16.png");
+	}
+
 	protected Icon getSearchIcon() {
 		return ImageUtils.getIcon("org/maia/swing/icons/text/search16.png");
 	}
 
+	public boolean isIncludeClearButton() {
+		return includeClearButton;
+	}
+
 	protected JComponent getSearchField() {
 		return searchField;
+	}
+
+	protected IconActionButton getClearButton() {
+		return clearButton;
 	}
 
 	protected IconActionButton getSearchButton() {
@@ -249,12 +316,14 @@ public abstract class TextSearchInputField extends JPanel {
 
 	private static class SimpleTextSearchInputField extends TextSearchInputField {
 
-		public SimpleTextSearchInputField() {
+		public SimpleTextSearchInputField(boolean includeClearButton) {
+			super(includeClearButton);
 		}
 
 		@Override
 		protected JComponent createSearchField() {
 			JTextField field = new JTextField();
+			field.setMargin(new Insets(3, 0, 3, 0));
 			field.addActionListener(new ActionListener() {
 
 				@Override
@@ -308,12 +377,15 @@ public abstract class TextSearchInputField extends JPanel {
 
 		public static int maximumHistoricalValues = TextHistoryInputField.defaultMaximumHistoricalValues;
 
-		public HistoryTextSearchInputField() {
+		public HistoryTextSearchInputField(boolean includeClearButton) {
+			super(includeClearButton);
 		}
 
 		@Override
 		protected JComponent createSearchField() {
 			TextHistoryInputField field = new TextHistoryInputField(maximumHistoricalValues);
+			field.setBorder(
+					BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(0, 0, 0, 4), field.getBorder()));
 			field.addListener(new TextHistoryInputFieldListener() {
 
 				@Override

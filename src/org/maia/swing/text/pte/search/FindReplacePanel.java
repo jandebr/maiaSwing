@@ -77,7 +77,7 @@ public class FindReplacePanel extends JPanel {
 	}
 
 	private TextSearchInputField createSearchField() {
-		TextSearchInputField field = TextSearchInputField.createFieldWithHistory();
+		TextSearchInputField field = TextSearchInputField.createFieldWithHistory(false);
 		field.addListener(new TextSearchInputFieldListener() {
 
 			@Override
