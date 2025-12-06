@@ -581,7 +581,7 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 		if (bounds != null) {
 			Insets margin = getState().getCursorMargin();
 			if (margin != null) {
-				return new Rectangle(bounds.x - margin.left, bounds.y - margin.top,
+				bounds.setBounds(bounds.x - margin.left, bounds.y - margin.top,
 						bounds.width + margin.left + margin.right, bounds.height + margin.top + margin.bottom);
 			}
 		}

@@ -177,7 +177,7 @@ public class SlidingItemListDemo extends SlidingItemListAdapter implements KeyLi
 			int height = getHeight(g);
 			boolean selected = component.isSelectedItem(this);
 			boolean fullScale = selected
-					&& component.getCursorOuterBoundsInComponent().contains(component.getItemBoundsInComponent(this));
+					&& component.getCursorInnerBoundsInComponent().contains(component.getItemBoundsInComponent(this));
 			if (!fullScale) {
 				g.setColor(Color.BLUE);
 				g.drawRect(0, 0, width - 1, height - 1);
