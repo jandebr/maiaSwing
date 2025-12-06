@@ -214,7 +214,7 @@ public abstract class BaseAnimatedComponent implements AnimatedComponent {
 
 		@Override
 		protected final void paintComponent(Graphics g) {
-			Graphics2D g2 = (Graphics2D) g.create();
+			Graphics2D g2 = (Graphics2D) g;
 			initializePaint(g2);
 			long t = System.currentTimeMillis();
 			if (!isFirstTimePainted()) {
@@ -225,7 +225,6 @@ public abstract class BaseAnimatedComponent implements AnimatedComponent {
 			setPreviousPaintTransform(g2.getTransform());
 			setLastTimePainted(t);
 			updateMetricsAfterPainting(getPaintMetrics(), t);
-			g2.dispose();
 		}
 
 		protected void initializePaint(Graphics2D g) {
