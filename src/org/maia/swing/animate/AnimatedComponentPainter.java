@@ -2,7 +2,9 @@ package org.maia.swing.animate;
 
 import java.awt.Toolkit;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import javax.swing.JComponent;
@@ -20,11 +22,13 @@ public class AnimatedComponentPainter extends Thread {
 
 	public static int defaultPaintsPerSecond = 25;
 
-	public AnimatedComponentPainter() {
-		this(defaultPaintsPerSecond);
+	private static Map<Integer, AnimatedComponentPainter> reusableAnimatedPainters; // indexed on paintsPerSecond
+
+	static {
+		reusableAnimatedPainters = new HashMap<Integer, AnimatedComponentPainter>();
 	}
 
-	public AnimatedComponentPainter(int paintsPerSecond) {
+	private AnimatedComponentPainter(int paintsPerSecond) {
 		super("Animated Component Painter @" + paintsPerSecond + "fps");
 		this.paintsPerSecond = paintsPerSecond;
 		this.components = new Vector<AnimatedComponent>();
@@ -32,10 +36,25 @@ public class AnimatedComponentPainter extends Thread {
 		setPriority(Thread.NORM_PRIORITY + 1);
 	}
 
+	public static AnimatedComponentPainter getPainter(int paintsPerSecond) {
+		AnimatedComponentPainter painter = null;
+		synchronized (reusableAnimatedPainters) {
+			painter = reusableAnimatedPainters.get(paintsPerSecond);
+			if (painter == null) {
+				painter = new AnimatedComponentPainter(paintsPerSecond);
+				reusableAnimatedPainters.put(paintsPerSecond, painter);
+			}
+		}
+		return painter;
+	}
+
 	public void addComponent(AnimatedComponent component) {
 		synchronized (getComponents()) {
 			if (!getComponents().contains(component)) {
 				getComponents().add(component);
+				if (!isAlive()) {
+					start();
+				}
 			}
 		}
 	}
@@ -43,6 +62,12 @@ public class AnimatedComponentPainter extends Thread {
 	public void removeComponent(AnimatedComponent component) {
 		synchronized (getComponents()) {
 			getComponents().remove(component);
+			if (!hasComponents()) {
+				stopPainting();
+				synchronized (reusableAnimatedPainters) {
+					reusableAnimatedPainters.remove(getPaintsPerSecond());
+				}
+			}
 		}
 	}
 

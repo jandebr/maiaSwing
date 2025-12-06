@@ -7,8 +7,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -39,13 +37,7 @@ public abstract class BaseAnimatedComponent implements AnimatedComponent {
 
 	private AnimatedComponentPainter animatedPainter;
 
-	private static Map<Integer, AnimatedComponentPainter> reusableAnimatedPainters; // indexed on paintsPerSecond
-
 	public static boolean logMetrics = false;
-
-	static {
-		reusableAnimatedPainters = new HashMap<Integer, AnimatedComponentPainter>();
-	}
 
 	protected BaseAnimatedComponent(Dimension size, Color background) {
 		this.panel = createAnimatedPanel(size, background);
@@ -80,12 +72,6 @@ public abstract class BaseAnimatedComponent implements AnimatedComponent {
 		AnimatedComponentPainter painter = getAnimatedPainter();
 		if (painter != null) {
 			painter.removeComponent(this);
-			if (!painter.hasComponents()) {
-				painter.stopPainting();
-				synchronized (reusableAnimatedPainters) {
-					reusableAnimatedPainters.remove(painter.getPaintsPerSecond());
-				}
-			}
 			setAnimatedPainter(null);
 		}
 	}
@@ -98,17 +84,8 @@ public abstract class BaseAnimatedComponent implements AnimatedComponent {
 			painter = null;
 		}
 		if (painter == null) {
-			synchronized (reusableAnimatedPainters) {
-				painter = reusableAnimatedPainters.get(refreshRate);
-				if (painter == null) {
-					painter = new AnimatedComponentPainter(refreshRate);
-					reusableAnimatedPainters.put(refreshRate, painter);
-				}
-			}
+			painter = AnimatedComponentPainter.getPainter(refreshRate);
 			painter.addComponent(this);
-			if (!painter.isAlive()) {
-				painter.start();
-			}
 			setAnimatedPainter(painter);
 		}
 	}
@@ -237,7 +214,7 @@ public abstract class BaseAnimatedComponent implements AnimatedComponent {
 
 		@Override
 		protected final void paintComponent(Graphics g) {
-			Graphics2D g2 = (Graphics2D) g;
+			Graphics2D g2 = (Graphics2D) g.create();
 			initializePaint(g2);
 			long t = System.currentTimeMillis();
 			if (!isFirstTimePainted()) {
@@ -248,6 +225,7 @@ public abstract class BaseAnimatedComponent implements AnimatedComponent {
 			setPreviousPaintTransform(g2.getTransform());
 			setLastTimePainted(t);
 			updateMetricsAfterPainting(getPaintMetrics(), t);
+			g2.dispose();
 		}
 
 		protected void initializePaint(Graphics2D g) {

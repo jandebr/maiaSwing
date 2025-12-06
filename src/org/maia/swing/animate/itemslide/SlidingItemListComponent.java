@@ -55,6 +55,8 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 
 	private GenericListenerList<SlidingItemListListener> listeners;
 
+	private int selectedItemIndex = -1;
+
 	private int lastLandedItemIndex = -1;
 
 	private long landingTimeMillis;
@@ -221,6 +223,7 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 	protected void invalidateLayout() {
 		setMaxItemWidth(-1.0);
 		setMaxItemHeight(-1.0);
+		invalidateSelectedItemIndex();
 		setValidatedLayout(false);
 		refreshUI();
 	}
@@ -234,7 +237,8 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 			if (hasItems()) {
 				getLayoutManager().layoutItems(getItemList(), g);
 				setState(new SlidingState());
-				int initialIndex = getItemList().getIndexOf(getItemNearestToCursor());
+				invalidateSelectedItemIndex();
+				int initialIndex = getSelectedItemIndex();
 				int initialIndexInRange = Math.max(Math.min(initialIndex, getMaximumItemSelectionIndex()),
 						getMinimumItemSelectionIndex());
 				setTargetState(getLayoutManager().getItemState(getItemList().getItem(initialIndexInRange), g));
@@ -242,6 +246,10 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 			}
 			setValidatedLayout(true);
 		}
+	}
+
+	private void invalidateSelectedItemIndex() {
+		setSelectedItemIndex(-1);
 	}
 
 	public void slideToPreviousItem() {
@@ -399,6 +407,7 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 		int siBefore = getSelectedItemIndex();
 		setState(newState);
 		if (!newState.equals(oldState)) {
+			invalidateSelectedItemIndex();
 			fireSlidingStateChanged();
 		}
 		int siAfter = getSelectedItemIndex();
@@ -561,6 +570,24 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 		return getLayoutManager().getItemBounds(item, g).getBounds();
 	}
 
+	public Rectangle getCursorInnerBoundsInComponent() {
+		Rectangle bounds = getLayoutManager().getCursorInnerBoundsInViewportCoords(getState(), getGraphics2D());
+		bounds.translate(getPadding().left, getPadding().top);
+		return bounds;
+	}
+
+	public Rectangle getCursorOuterBoundsInComponent() {
+		Rectangle bounds = getCursorInnerBoundsInComponent();
+		if (bounds != null) {
+			Insets margin = getState().getCursorMargin();
+			if (margin != null) {
+				return new Rectangle(bounds.x - margin.left, bounds.y - margin.top,
+						bounds.width + margin.left + margin.right, bounds.height + margin.top + margin.bottom);
+			}
+		}
+		return bounds;
+	}
+
 	public Orientation getOrientation() {
 		return isHorizontalLayout() ? Orientation.HORIZONTAL : Orientation.VERTICAL;
 	}
@@ -631,24 +658,37 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 		}
 	}
 
-	public int getSelectedItemIndex() {
-		if (hasItems()) {
-			return getItemList().getIndexOf(getSelectedItemInList());
+	public boolean isSelectedItem(SlidingItem item) {
+		SlidingItem selected = getSelectedItem();
+		if (selected == null) {
+			return false;
 		} else {
-			return -1;
+			return selected.equals(item);
 		}
 	}
 
 	public SlidingItem getSelectedItem() {
-		if (hasItems()) {
-			return getSelectedItemInList().getItem();
+		int i = getSelectedItemIndex();
+		if (i >= 0) {
+			return getItemList().getItem(i).getItem();
 		} else {
 			return null;
 		}
 	}
 
-	protected SlidingItemInList getSelectedItemInList() {
-		return getItemNearestToCursor();
+	public int getSelectedItemIndex() {
+		if (hasItems()) {
+			if (selectedItemIndex < 0) {
+				selectedItemIndex = getItemList().getIndexOf(getItemNearestToCursor());
+			}
+			return selectedItemIndex;
+		} else {
+			return -1;
+		}
+	}
+
+	private void setSelectedItemIndex(int index) {
+		this.selectedItemIndex = index;
 	}
 
 	private SlidingItemInList getItemNearestToCursor() {

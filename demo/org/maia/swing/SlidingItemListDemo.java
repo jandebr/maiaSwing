@@ -73,7 +73,7 @@ public class SlidingItemListDemo extends SlidingItemListAdapter implements KeyLi
 	private void showFrame() {
 		JFrame frame = new JFrame("Sliding item list");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.getContentPane().setBackground(Color.BLACK);
+		frame.getContentPane().setBackground(Color.GRAY);
 		frame.add(createPanel(), BorderLayout.CENTER);
 		frame.add(Box.createVerticalStrut(40), BorderLayout.NORTH);
 		frame.add(Box.createVerticalStrut(40), BorderLayout.SOUTH);
@@ -157,7 +157,7 @@ public class SlidingItemListDemo extends SlidingItemListAdapter implements KeyLi
 
 		public static Font mnemonicFont = Font.decode("Century-PLAIN-40");
 
-		public static Font mnemonicFontSelected = Font.decode("Century-PLAIN-80");
+		public static Font mnemonicFontSelected = Font.decode("Century-PLAIN-60");
 
 		public static Color mnemonicColor = new Color(255, 255, 255, 150);
 
@@ -173,17 +173,38 @@ public class SlidingItemListDemo extends SlidingItemListAdapter implements KeyLi
 
 		@Override
 		public void render(Graphics2D g, SlidingItemListComponent component) {
-			boolean selected = component.getSelectedItem().equals(this);
 			int width = getWidth(g);
 			int height = getHeight(g);
+			boolean selected = component.isSelectedItem(this);
+			boolean fullScale = selected
+					&& component.getCursorOuterBoundsInComponent().contains(component.getItemBoundsInComponent(this));
+			if (!fullScale) {
+				g.setColor(Color.BLUE);
+				g.drawRect(0, 0, width - 1, height - 1);
+			}
+			Graphics2D g2 = transform(g, fullScale);
+			g2.setColor(bgColor);
+			g2.fillRect(0, 0, width, height - 20);
+			g2.fillRect(0, height - 16, width, 16);
+			g2.setColor(selected ? mnemonicColorSelected : mnemonicColor);
+			g2.setFont(selected ? mnemonicFontSelected : mnemonicFont);
 			String label = String.valueOf(getMnemonic());
-			g.setColor(bgColor);
-			g.fillRect(0, 0, width, height - 20);
-			g.fillRect(0, height - 16, width, 16);
-			g.setColor(selected ? mnemonicColorSelected : mnemonicColor);
-			g.setFont(selected ? mnemonicFontSelected : mnemonicFont);
-			int labelWidth = g.getFontMetrics().getStringBounds(label, g).getBounds().width;
-			g.drawString(label, (width - labelWidth) / 2, (height + 40) / 2);
+			int labelWidth = g2.getFontMetrics().getStringBounds(label, g2).getBounds().width;
+			g2.drawString(label, (width - labelWidth) / 2, (height + 40) / 2);
+			g2.dispose();
+		}
+
+		private Graphics2D transform(Graphics2D g, boolean fullScale) {
+			Graphics2D g2 = (Graphics2D) g.create();
+			if (!fullScale) {
+				int width = getWidth(g);
+				int height = getHeight(g);
+				int x0 = Math.round(0.2f * width);
+				int y0 = Math.round(0.2f * height);
+				g2.translate(x0, y0);
+				g2.scale(0.6, 0.6);
+			}
+			return g2;
 		}
 
 		@Override
