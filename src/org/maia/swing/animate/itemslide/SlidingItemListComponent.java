@@ -61,6 +61,8 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 
 	private long landingTimeMillis;
 
+	private boolean landed;
+
 	private boolean lastSliding;
 
 	private boolean validatedLayout;
@@ -403,6 +405,7 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 	}
 
 	private void changeState(SlidingState newState) {
+		// state change
 		SlidingState oldState = getState();
 		int siBefore = getSelectedItemIndex();
 		setState(newState);
@@ -410,22 +413,29 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 			invalidateSelectedItemIndex();
 			fireSlidingStateChanged();
 		}
+		// selection change
 		int siAfter = getSelectedItemIndex();
 		if (siAfter != siBefore || !isValidatedLayout()) {
 			fireItemSelectionChanged(siAfter);
 		}
+		// landing change
 		boolean slide = isSliding();
 		if (slide) {
+			setLanded(false);
 			setLandingTimeMillis(Long.MAX_VALUE);
+			setLastLandedItemIndex(-1);
 		} else {
 			if (siAfter != getLastLandedItemIndex() || !isValidatedLayout()) {
+				setLanded(false);
 				setLandingTimeMillis(System.currentTimeMillis());
 				setLastLandedItemIndex(siAfter);
 			} else if (isSteadyLanding()) {
+				setLanded(true); // landed
 				setLandingTimeMillis(Long.MAX_VALUE);
 				fireItemSelectionLanded(siAfter);
 			}
 		}
+		// sliding change
 		if (isValidatedLayout()) {
 			if (!isLastSliding() && slide) {
 				fireStartSliding();
@@ -881,6 +891,14 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 
 	private void setLandingTimeMillis(long timeMillis) {
 		this.landingTimeMillis = timeMillis;
+	}
+
+	public boolean isLanded() {
+		return landed;
+	}
+
+	private void setLanded(boolean landed) {
+		this.landed = landed;
 	}
 
 	private boolean isLastSliding() {
