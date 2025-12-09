@@ -10,6 +10,7 @@ import javax.swing.Box;
 import javax.swing.JFrame;
 
 import org.maia.graphics2d.image.ImageUtils;
+import org.maia.swing.animate.imageslide.show.SlidingImageCollectionIterator;
 import org.maia.swing.animate.imageslide.show.SlidingImageShow;
 import org.maia.swing.animate.imageslide.show.SlidingImageShowBuilder;
 import org.maia.util.SystemUtils;
@@ -31,19 +32,21 @@ public class SlidingImageShowDemo extends KeyAdapter {
 	}
 
 	private SlidingImageShow createShow() {
+		SlidingImageCollectionIterator iterator = SlidingImageCollectionIterator.createPermutedRepeatingIterator();
+		iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory.jpg"));
+		iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory2.jpg"));
+		iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory3.jpg"));
+		iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory4.jpg"));
+		iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory5.jpg"));
+		iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory6.jpg"));
 		SlidingImageShowBuilder builder = new SlidingImageShowBuilder(new Dimension(960, 540));
-		builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory.jpg"));
-		builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory2.jpg"));
-		builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory3.jpg"));
-		builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory4.jpg"));
-		builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory5.jpg"));
-		builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/toystory6.jpg"));
+		builder.withImageIterator(iterator);
 		builder.withMaxToMinZoomFactorRatio(2.0);
 		/*
-		 * builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/screenshot1.png"));
-		 * builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/screenshot2.png"));
-		 * builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/screenshot3.png"));
-		 * builder.addImage(ImageUtils.readFromResource("org/maia/swing/resources/screenshot4.png"));
+		 * iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/screenshot1.png"));
+		 * iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/screenshot2.png"));
+		 * iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/screenshot3.png"));
+		 * iterator.addImage(ImageUtils.readFromResource("org/maia/swing/resources/screenshot4.png"));
 		 * builder.withMaxToMinZoomFactorRatio(3.0);
 		 */
 		return builder.build();

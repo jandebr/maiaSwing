@@ -5,8 +5,6 @@ import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Dimension;
 import java.awt.Image;
-import java.util.List;
-import java.util.Vector;
 
 import javax.swing.JComponent;
 import javax.swing.border.Border;
@@ -39,7 +37,7 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 	private Composite borderComposite; // nullable
 
-	private List<Image> images;
+	private SlidingImageIterator imageIterator; // nullable
 
 	private Image imageOverlay; // nullable
 
@@ -83,7 +81,6 @@ public class SlidingImageShowBuilder implements Cloneable {
 		withSize(size);
 		withBackgroundColor(background);
 		withBorderComposite(AlphaComposite.Src);
-		withImages(new Vector<Image>());
 		withImageOverlay(GradientImageFactory.createGradientBorderImage(size, background, 20));
 		withImageOverlayComposite(AlphaComposite.SrcOver);
 		withPathGeneratorBuilder(new PathGeneratorBuilderImpl());
@@ -107,7 +104,7 @@ public class SlidingImageShowBuilder implements Cloneable {
 		clone.withBackgroundColor(getBackgroundColor());
 		clone.withBorder(getBorder());
 		clone.withBorderComposite(getBorderComposite());
-		clone.withImages(new Vector<Image>(getImages()));
+		clone.withImageIterator(getImageIterator());
 		clone.withImageOverlay(getImageOverlay());
 		clone.withImageOverlayComposite(getImageOverlayComposite());
 		clone.withPathGeneratorBuilder(getPathGeneratorBuilder());
@@ -154,13 +151,6 @@ public class SlidingImageShowBuilder implements Cloneable {
 		return overlay;
 	}
 
-	public SlidingImageShowBuilder addImage(Image image) {
-		if (image == null)
-			throw new NullPointerException("image is null");
-		getImages().add(image);
-		return this;
-	}
-
 	public SlidingImageShowBuilder withSize(Dimension size) {
 		if (size == null)
 			throw new NullPointerException("size is null");
@@ -185,10 +175,8 @@ public class SlidingImageShowBuilder implements Cloneable {
 		return this;
 	}
 
-	public SlidingImageShowBuilder withImages(List<Image> images) {
-		if (images == null)
-			throw new NullPointerException("images is null");
-		this.images = images;
+	public SlidingImageShowBuilder withImageIterator(SlidingImageIterator imageIterator) {
+		this.imageIterator = imageIterator;
 		return this;
 	}
 
@@ -290,8 +278,8 @@ public class SlidingImageShowBuilder implements Cloneable {
 		return borderComposite;
 	}
 
-	public List<Image> getImages() {
-		return images;
+	public SlidingImageIterator getImageIterator() {
+		return imageIterator;
 	}
 
 	public Image getImageOverlay() {
@@ -387,8 +375,6 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 		private ColorOverlayComponent overlay;
 
-		private int nextImageIndex;
-
 		private boolean started;
 
 		private boolean stopped;
@@ -427,19 +413,22 @@ public class SlidingImageShowBuilder implements Cloneable {
 		}
 
 		private void animateNextImage(long minimumDelayTimeMillis) {
-			if (!getImages().isEmpty()) {
+			if (getImageIterator() != null && getImageIterator().hasNext()) {
 				new Thread(new Runnable() {
 
 					@Override
 					public void run() {
 						long t0 = System.currentTimeMillis();
-						int maxAttempts = 3 * getImages().size();
+						int maxAttempts = 3 * getImageIterator().getUniqueImageCount();
 						int attempts = 0;
 						Image image = null;
 						SlidingImagePath path = null;
 						do {
-							attempts++;
-							image = getNextImage();
+							if (attempts++ % 3 == 0) {
+								image = getNextImage();
+								if (image == null)
+									break;
+							}
 							path = generatePath(image);
 						} while (path == null && attempts < maxAttempts);
 						if (path != null) {
@@ -465,34 +454,33 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 		private Image getNextImage() {
 			Image image = null;
-			if (!getImages().isEmpty()) {
-				int i = getNextImageIndex();
-				int n = getImages().size();
-				image = getImages().get(i % n);
-				setNextImageIndex((i + 1) % n);
+			if (getImageIterator() != null && getImageIterator().hasNext()) {
+				image = getImageIterator().next();
 			}
 			return image;
 		}
 
 		private SlidingImagePath generatePath(Image image) {
-			SlidingImagePathGenerator generator = getPathGeneratorBuilder().buildGenerator(image, getSize());
-			SlidingImagePathEvaluator evaluator = getPathEvaluatorBuilder().buildEvaluator(image, getSize());
 			SlidingImagePath bestPath = null;
-			double bestScore = 0;
-			for (int i = 0; i < 10; i++) {
-				SlidingImagePath path = generator.generatePath();
-				double score = evaluator.evaluatePath(path);
-				if (score > bestScore && (bestPath == null || Math.random() <= 0.8)) {
-					bestPath = path;
-					bestScore = score;
+			if (image != null) {
+				SlidingImagePathGenerator generator = getPathGeneratorBuilder().buildGenerator(image, getSize());
+				SlidingImagePathEvaluator evaluator = getPathEvaluatorBuilder().buildEvaluator(image, getSize());
+				double bestScore = 0;
+				for (int i = 0; i < 10; i++) {
+					SlidingImagePath path = generator.generatePath();
+					double score = evaluator.evaluatePath(path);
+					if (score > bestScore && (bestPath == null || Math.random() <= 0.8)) {
+						bestPath = path;
+						bestScore = score;
+					}
 				}
-			}
-			if (logPaths) {
-				if (bestPath != null) {
-					System.out.println(bestPath + " score:" + Math.round(bestScore * 1000.0) / 1000.0 + " distance:"
-							+ Math.round(bestPath.getDistanceInViewCoordinates()));
-				} else {
-					System.out.println("No good path found");
+				if (logPaths) {
+					if (bestPath != null) {
+						System.out.println(bestPath + " score:" + Math.round(bestScore * 1000.0) / 1000.0 + " distance:"
+								+ Math.round(bestPath.getDistanceInViewCoordinates()));
+					} else {
+						System.out.println("No good path found");
+					}
 				}
 			}
 			return bestPath;
@@ -530,14 +518,6 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 		private ColorOverlayComponent getOverlay() {
 			return overlay;
-		}
-
-		private int getNextImageIndex() {
-			return nextImageIndex;
-		}
-
-		private void setNextImageIndex(int index) {
-			this.nextImageIndex = index;
 		}
 
 		private boolean isStarted() {
