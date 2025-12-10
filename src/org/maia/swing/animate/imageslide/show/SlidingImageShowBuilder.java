@@ -63,6 +63,8 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 	private int refreshRate;
 
+	private int pathGenerationAttemptsPerImage;
+
 	private boolean higherQualityRenderingEnabled;
 
 	private boolean repaintClientDriven;
@@ -93,6 +95,7 @@ public class SlidingImageShowBuilder implements Cloneable {
 		withImageFadeOutTimeMillis(4000L);
 		withTimeMillisBetweenImages(1000L);
 		withRefreshRate(25);
+		withPathGenerationAttemptsPerImage(3);
 		withHigherQualityRenderingEnabled(true);
 		withRepaintClientDriven(false);
 	}
@@ -117,6 +120,7 @@ public class SlidingImageShowBuilder implements Cloneable {
 		clone.withImageFadeOutTimeMillis(getImageFadeOutTimeMillis());
 		clone.withTimeMillisBetweenImages(getTimeMillisBetweenImages());
 		clone.withRefreshRate(getRefreshRate());
+		clone.withPathGenerationAttemptsPerImage(getPathGenerationAttemptsPerImage());
 		clone.withHigherQualityRenderingEnabled(isHigherQualityRenderingEnabled());
 		clone.withRepaintClientDriven(isRepaintClientDriven());
 		return clone;
@@ -252,6 +256,13 @@ public class SlidingImageShowBuilder implements Cloneable {
 		return this;
 	}
 
+	public SlidingImageShowBuilder withPathGenerationAttemptsPerImage(int attempts) {
+		if (attempts <= 0)
+			throw new IllegalArgumentException("Path generation attempts per image must be > 0 (" + attempts + ")");
+		this.pathGenerationAttemptsPerImage = attempts;
+		return this;
+	}
+
 	public SlidingImageShowBuilder withHigherQualityRenderingEnabled(boolean enabled) {
 		this.higherQualityRenderingEnabled = enabled;
 		return this;
@@ -328,6 +339,10 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 	public int getRefreshRate() {
 		return refreshRate;
+	}
+
+	public int getPathGenerationAttemptsPerImage() {
+		return pathGenerationAttemptsPerImage;
 	}
 
 	public boolean isHigherQualityRenderingEnabled() {
@@ -419,12 +434,13 @@ public class SlidingImageShowBuilder implements Cloneable {
 					@Override
 					public void run() {
 						long t0 = System.currentTimeMillis();
-						int maxAttempts = 3 * getImageIterator().getUniqueImageCount();
+						int maxAttemptsPerImage = getPathGenerationAttemptsPerImage();
+						int maxAttempts = maxAttemptsPerImage * getImageIterator().getUniqueImageCount();
 						int attempts = 0;
 						Image image = null;
 						SlidingImagePath path = null;
 						do {
-							if (attempts++ % 3 == 0) {
+							if (attempts++ % maxAttemptsPerImage == 0) {
 								image = getNextImage();
 								if (image == null)
 									break;

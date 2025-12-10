@@ -47,10 +47,10 @@ public class SlidingImageCollectionIterator implements SlidingImageIterator {
 	}
 
 	public synchronized void addImage(Image image) {
-		addImageElement(new ImageWrapper(image));
+		addImageLazyLoaded(new ImageWrapper(image));
 	}
 
-	public synchronized void addImageElement(ImageElement element) {
+	public synchronized void addImageLazyLoaded(ImageElement element) {
 		getImageElements().add(element);
 	}
 
