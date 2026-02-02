@@ -1002,8 +1002,8 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 		}
 
 		@Override
-		protected void updateStateBetweenPaints(Graphics2D g, double elapsedTimeMillis) {
-			updateStateOverTime(g, elapsedTimeMillis);
+		protected void updateStateBetweenPaints(Graphics2D g, long elapsedTimeMillis) {
+			updateStateOverTime(g, (double) elapsedTimeMillis);
 		}
 
 		@Override

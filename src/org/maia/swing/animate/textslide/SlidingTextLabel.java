@@ -257,7 +257,7 @@ public class SlidingTextLabel extends BaseAnimatedComponent {
 		}
 
 		@Override
-		protected void updateStateBetweenPaints(Graphics2D g, double elapsedTimeMillis) {
+		protected void updateStateBetweenPaints(Graphics2D g, long elapsedTimeMillis) {
 			double t = 0;
 			if (isAnimating()) {
 				double v = getTranslationRadialVelocity();

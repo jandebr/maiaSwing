@@ -229,16 +229,18 @@ public abstract class BaseAnimatedComponent implements AnimatedComponent {
 
 		protected void initializePaint(Graphics2D g) {
 			if (isHigherQualityRenderingEnabled()) {
+				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 				g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 				g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 			} else {
+				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 				g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_DEFAULT);
 				g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
 						RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			}
 		}
 
-		protected abstract void updateStateBetweenPaints(Graphics2D g, double elapsedTimeMillis);
+		protected abstract void updateStateBetweenPaints(Graphics2D g, long elapsedTimeMillis);
 
 		protected abstract void doPaintComponent(Graphics2D g);
 

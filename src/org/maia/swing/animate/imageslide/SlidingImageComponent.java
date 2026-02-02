@@ -333,7 +333,7 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 		}
 
 		@Override
-		protected void updateStateBetweenPaints(Graphics2D g, double elapsedTimeMillis) {
+		protected void updateStateBetweenPaints(Graphics2D g, long elapsedTimeMillis) {
 			updateStateOverTime();
 		}
 
