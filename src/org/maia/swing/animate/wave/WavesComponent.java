@@ -15,13 +15,14 @@ public class WavesComponent extends BaseAnimatedComponent {
 
 	private WaveDynamics waveDynamics;
 
-	private WavesOverlay wavesOverlay;
+	private List<WavesOverlay> wavesOverlays;
 
 	private List<Wave> waves; // ordered back to front
 
 	public WavesComponent(Dimension size, Color background) {
 		super(size, background);
 		this.waveDynamics = createDefaultWaveDynamics();
+		this.wavesOverlays = new Vector<WavesOverlay>();
 		this.waves = new Vector<Wave>();
 	}
 
@@ -32,6 +33,20 @@ public class WavesComponent extends BaseAnimatedComponent {
 
 	protected WaveDynamics createDefaultWaveDynamics() {
 		return new SimpleSlidingWaveDynamics();
+	}
+
+	public void clearWavesOverlays() {
+		synchronized (getWavesOverlays()) {
+			getWavesOverlays().clear();
+		}
+		refreshUI();
+	}
+
+	public void addWavesOverlay(WavesOverlay overlay) {
+		synchronized (getWavesOverlays()) {
+			getWavesOverlays().add(overlay);
+		}
+		refreshUI();
 	}
 
 	public void clearWaves() {
@@ -70,13 +85,8 @@ public class WavesComponent extends BaseAnimatedComponent {
 		refreshUI();
 	}
 
-	public WavesOverlay getWavesOverlay() {
-		return wavesOverlay;
-	}
-
-	public void setWavesOverlay(WavesOverlay overlay) {
-		this.wavesOverlay = overlay;
-		refreshUI();
+	private List<WavesOverlay> getWavesOverlays() {
+		return wavesOverlays;
 	}
 
 	private List<Wave> getWaves() {
@@ -109,18 +119,20 @@ public class WavesComponent extends BaseAnimatedComponent {
 
 		protected void paintBack(Graphics2D g) {
 			paintBackground(g);
-			WavesOverlay overlay = getWavesOverlay();
-			if (overlay != null) {
-				overlay.paintOverBackground(g, WavesComponent.this);
+			synchronized (getWavesOverlays()) {
+				for (WavesOverlay overlay : getWavesOverlays()) {
+					overlay.paintOverBackground(g, WavesComponent.this);
+				}
 			}
 		}
 
 		protected void paintWaves(Graphics2D g) {
-			WavesOverlay overlay = getWavesOverlay();
 			for (int i = 0; i < getWaveCount(); i++) {
 				paintWave(g, getWave(i));
-				if (overlay != null) {
-					overlay.paintOverWave(g, i, WavesComponent.this);
+				synchronized (getWavesOverlays()) {
+					for (WavesOverlay overlay : getWavesOverlays()) {
+						overlay.paintOverWave(g, i, WavesComponent.this);
+					}
 				}
 			}
 		}
