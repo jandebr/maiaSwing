@@ -15,6 +15,8 @@ import org.maia.graphics2d.image.ImageUtils;
 
 public class PixelatedWavesComponent extends WavesComponent {
 
+	private boolean antialiasingPixels;
+
 	public PixelatedWavesComponent(Dimension size, Color background) {
 		this(size, background, 1, 12);
 	}
@@ -45,6 +47,7 @@ public class PixelatedWavesComponent extends WavesComponent {
 			double pixelSizeInclination, long maximumWaveLagMillis) {
 		super(size, background);
 		setHigherQualityRenderingEnabled(false);
+		setAntialiasingPixels(true);
 		getPanel().setPixelSizeFunction(PerpetualApproximatingFunction2D.createCubicApproximatingFunction(
 				new PixelSizeGenerator(minimumPixelSize, maximumPixelSize, pixelSizeInclination)));
 		getPanel().setMaximumWaveLagMillis(maximumWaveLagMillis);
@@ -58,6 +61,15 @@ public class PixelatedWavesComponent extends WavesComponent {
 	@Override
 	protected PixelatedWavesPanel getPanel() {
 		return (PixelatedWavesPanel) super.getPanel();
+	}
+
+	public boolean isAntialiasingPixels() {
+		return antialiasingPixels;
+	}
+
+	public void setAntialiasingPixels(boolean antialiasing) {
+		this.antialiasingPixels = antialiasing;
+		refreshUI();
 	}
 
 	@SuppressWarnings("serial")
@@ -90,7 +102,11 @@ public class PixelatedWavesComponent extends WavesComponent {
 			BufferedImage canvas = getCanvasForPixelSize(getPixelSize(wave));
 			ImageUtils.makeFullyTransparent(canvas);
 			Graphics2D cg = canvas.createGraphics();
-			cg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			if (isAntialiasingPixels()) {
+				cg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			} else {
+				cg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+			}
 			cg.scale(canvas.getWidth(), canvas.getHeight());
 			paintWaveNormalized(cg, wave);
 			cg.dispose();
