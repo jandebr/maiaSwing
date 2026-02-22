@@ -118,7 +118,9 @@ public class WavesComponent extends BaseAnimatedComponent {
 		}
 
 		protected void paintBack(Graphics2D g) {
-			paintBackground(g);
+			if (getBackground() != null) {
+				paintBackground(g);
+			}
 			synchronized (getWavesOverlays()) {
 				for (WavesOverlay overlay : getWavesOverlays()) {
 					overlay.paintOverBackground(g, WavesComponent.this);
