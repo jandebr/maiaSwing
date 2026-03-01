@@ -39,7 +39,6 @@ public class WavesDemo {
 
 	private WaveDynamics createWaveDynamics(WavesComponent comp) {
 		AgitatedWaveDynamics dynamics = new AgitatedWaveDynamics(comp, 0.7f);
-		dynamics.setAgitationLevelProgression(AgitatedWaveDynamics.createRandomLevelProgression());
 		dynamics.setPerspectiveLiftMaximum(0.1f);
 		dynamics.getWavelengthRange().setRange(3f, 6f);
 		return dynamics;

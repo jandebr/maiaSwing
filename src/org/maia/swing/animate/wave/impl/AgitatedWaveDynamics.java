@@ -37,7 +37,7 @@ public class AgitatedWaveDynamics implements WaveDynamics {
 	private ValueRange velocityRange = new ValueRange(0.4f, 1.0f); // proportionate to agitation, in wavelenghts per
 																	// second
 
-	private List<AgitationLevel> agitationLevels = new Vector<AgitationLevel>();
+	private List<AgitationLevel> agitationLevels;
 
 	private Function2D agitationFunction; // evolves within the current agitation level's range
 
@@ -62,38 +62,35 @@ public class AgitatedWaveDynamics implements WaveDynamics {
 	public AgitatedWaveDynamics(WavesComponent component, float baseline, int agitationLevelCount,
 			TimeRange agitationTimeRange, AgitationLevelProgression agitationLevelProgression,
 			long maximumWaveLagMillis) {
-		setBaseline(baseline);
-		setAgitationLevelProgression(agitationLevelProgression);
-		init(component, agitationLevelCount, agitationTimeRange, maximumWaveLagMillis);
+		this(component, baseline, createAgitationLevels(agitationLevelCount, agitationTimeRange),
+				agitationLevelProgression, maximumWaveLagMillis);
 	}
 
-	private void init(WavesComponent component, int agitationLevelCount, TimeRange agitationTimeRange,
-			long maximumWaveLagMillis) {
-		int n = component.getWaveCount();
-		double n1 = Math.max(n - 1.0, 1.0);
-		setWaveCount(n);
+	public AgitatedWaveDynamics(WavesComponent component, float baseline, List<AgitationLevel> agitationLevels,
+			AgitationLevelProgression agitationLevelProgression, long maximumWaveLagMillis) {
+		setBaseline(baseline);
+		setWaveCount(component.getWaveCount());
+		double n1 = Math.max(getWaveCount() - 1.0, 1.0);
 		setPerspectiveLiftModulator(SigmoidFunction2D.createCappedFunction(-1.0, 1.0, n1 * 2, 0));
 		setWavelengthModulator(SigmoidFunction2D.createCappedFunction(0.5, 1.0, 0, n1));
 		setAmplitudeModulator(SigmoidFunction2D.createCappedFunction(0.5, 1.0, 0, n1));
-		initAgitationLevels(agitationLevelCount, agitationTimeRange);
-		initAgitationFunction();
+		setAgitationLevels(agitationLevels);
+		setAgitationLevelProgression(agitationLevelProgression);
+		setAgitationFunction(
+				PerpetualApproximatingFunction2D.createCubicApproximatingFunction(new AgitationValueGenerator()));
 		initWaves(component, maximumWaveLagMillis);
 	}
 
-	private void initAgitationLevels(int levelCount, TimeRange timeRange) {
-		clearAgitationLevels();
+	private static List<AgitationLevel> createAgitationLevels(int levelCount, TimeRange timeRange) {
 		int n = Math.max(levelCount, 1);
+		List<AgitationLevel> levels = new Vector<AgitationLevel>(n);
 		float step = 1f / n;
 		for (int i = 0; i < n; i++) {
 			float min = i * step;
 			float max = min + Math.min(1f, step);
-			addAgitationLevel(new AgitationLevel(new ValueRange(min, max), timeRange));
+			levels.add(new AgitationLevel(new ValueRange(min, max), timeRange));
 		}
-	}
-
-	private void initAgitationFunction() {
-		setAgitationFunction(
-				PerpetualApproximatingFunction2D.createCubicApproximatingFunction(new AgitationValueGenerator()));
+		return levels;
 	}
 
 	private void initWaves(WavesComponent component, long maximumWaveLagMillis) {
@@ -112,14 +109,6 @@ public class AgitatedWaveDynamics implements WaveDynamics {
 			wave.setTranslationY(computeWaveBaseline(waveIndex));
 			wave.setTranslationX(getRandomizer().drawFloatUnitNumber());
 		}
-	}
-
-	public void clearAgitationLevels() {
-		getAgitationLevels().clear();
-	}
-
-	public void addAgitationLevel(AgitationLevel level) {
-		getAgitationLevels().add(level);
 	}
 
 	@Override
@@ -177,7 +166,7 @@ public class AgitatedWaveDynamics implements WaveDynamics {
 	}
 
 	public static AgitationLevelProgression createRandomLevelProgression() {
-		return createRandomLevelProgression(true);
+		return createRandomLevelProgression(false);
 	}
 
 	public static AgitationLevelProgression createRandomLevelProgression(boolean startAtLevelZero) {
@@ -272,7 +261,7 @@ public class AgitatedWaveDynamics implements WaveDynamics {
 		return baseline;
 	}
 
-	public void setBaseline(float baseline) {
+	private void setBaseline(float baseline) {
 		this.baseline = baseline;
 	}
 
@@ -332,6 +321,10 @@ public class AgitatedWaveDynamics implements WaveDynamics {
 		return agitationLevels;
 	}
 
+	private void setAgitationLevels(List<AgitationLevel> levels) {
+		this.agitationLevels = levels;
+	}
+
 	private Function2D getAgitationFunction() {
 		return agitationFunction;
 	}
@@ -344,7 +337,7 @@ public class AgitatedWaveDynamics implements WaveDynamics {
 		return agitationLevelProgression;
 	}
 
-	public void setAgitationLevelProgression(AgitationLevelProgression progression) {
+	private void setAgitationLevelProgression(AgitationLevelProgression progression) {
 		this.agitationLevelProgression = progression;
 	}
 
