@@ -1021,7 +1021,7 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 						// first use of back buffer
 						setRepaintFully(true);
 					}
-					backBuffer = createVolatileImage(w, h);
+					backBuffer = createVolatileImage(w, h + 1);
 				}
 				boolean redo = false;
 				do {
@@ -1031,7 +1031,7 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 						setRepaintFully(true);
 					} else if (val == VolatileImage.IMAGE_INCOMPATIBLE) {
 						// old back buffer doesn't work with new GraphicsConfig; re-create it
-						backBuffer = createVolatileImage(w, h);
+						backBuffer = createVolatileImage(w, h + 1);
 						setRepaintFully(true);
 					}
 					Graphics2D gImg = backBuffer.createGraphics();
