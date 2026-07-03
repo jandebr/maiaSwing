@@ -270,6 +270,10 @@ public class SlidingItemListOutlineView extends JComponent {
 		return margin;
 	}
 
+	public void setMargin(Insets margin) {
+		this.margin = margin;
+	}
+
 	public Color getSlidingLaneColor() {
 		return slidingLaneColor;
 	}
