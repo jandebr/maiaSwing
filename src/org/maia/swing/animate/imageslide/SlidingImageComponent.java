@@ -1,5 +1,6 @@
 package org.maia.swing.animate.imageslide;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Dimension;
@@ -30,9 +31,15 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 
 	private SlidingImageState targetState;
 
-	private long startTime;
+	private long startTimeNanos;
 
-	private long targetTime;
+	private long targetTimeNanos;
+
+	private long fadeInDurationMillis;
+
+	private long fadeOutDurationMillis;
+
+	private float imageOpacity;
 
 	private boolean lastAnimating;
 
@@ -115,9 +122,9 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 	public void animateTo(SlidingImageState state, long durationMillis) {
 		synchronized (this) {
 			long now = System.nanoTime();
-			setStartTime(now);
+			setStartTimeNanos(now);
 			setStartState(getState().clone());
-			setTargetTime(now + Math.max(durationMillis, 0L) * 1000000);
+			setTargetTimeNanos(now + Math.max(durationMillis, 0L) * 1000000);
 			setTargetState(state);
 		}
 	}
@@ -128,22 +135,45 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 
 	public void moveTo(SlidingImageState state) {
 		synchronized (this) {
-			setTargetTime(System.nanoTime());
+			setTargetTimeNanos(System.nanoTime());
 			setTargetState(state);
 		}
 		changeState(state);
 		refreshUI();
 	}
 
+	private void updateImageOpacityOverTime() {
+		float opacity = 1f;
+		long now = System.nanoTime();
+		long st = getStartTimeNanos();
+		long tt = getTargetTimeNanos();
+		long dur = tt - st;
+		long fin = getFadeInDurationMillis() * 1000000L;
+		long fout = getFadeOutDurationMillis() * 1000000L;
+		long fdur = fin + fout;
+		if (fdur > dur) {
+			double s = dur / (double) fdur;
+			fin = (long) Math.floor(fin * s);
+			fout = (long) Math.floor(fout * s);
+		}
+		if (fin > 0L && now < st + fin) {
+			opacity = (now - st) / (float) fin;
+		} else if (fout > 0L && now > tt - fout) {
+			opacity = -(now - tt) / (float) fout;
+		}
+		opacity = Math.max(Math.min(opacity, 1f), 0f);
+		setImageOpacity(opacity);
+	}
+
 	private void updateStateOverTime() {
 		SlidingImageState newState = null;
 		synchronized (this) {
 			long now = System.nanoTime();
-			long tt = getTargetTime();
+			long tt = getTargetTimeNanos();
 			if (now >= tt) {
 				newState = getTargetState();
 			} else {
-				long st = getStartTime();
+				long st = getStartTimeNanos();
 				double r = (now - st) / (double) (tt - st);
 				newState = getStartState().createInterpolation(getTargetState(), r);
 			}
@@ -289,20 +319,44 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 		this.targetState = targetState;
 	}
 
-	private long getStartTime() {
-		return startTime;
+	private long getStartTimeNanos() {
+		return startTimeNanos;
 	}
 
-	private void setStartTime(long startTime) {
-		this.startTime = startTime;
+	private void setStartTimeNanos(long startTimeNanos) {
+		this.startTimeNanos = startTimeNanos;
 	}
 
-	private long getTargetTime() {
-		return targetTime;
+	private long getTargetTimeNanos() {
+		return targetTimeNanos;
 	}
 
-	private void setTargetTime(long targetTime) {
-		this.targetTime = targetTime;
+	private void setTargetTimeNanos(long targetTimeNanos) {
+		this.targetTimeNanos = targetTimeNanos;
+	}
+
+	public long getFadeInDurationMillis() {
+		return fadeInDurationMillis;
+	}
+
+	public void setFadeInDurationMillis(long durationMillis) {
+		this.fadeInDurationMillis = durationMillis;
+	}
+
+	public long getFadeOutDurationMillis() {
+		return fadeOutDurationMillis;
+	}
+
+	public void setFadeOutDurationMillis(long durationMillis) {
+		this.fadeOutDurationMillis = durationMillis;
+	}
+
+	private float getImageOpacity() {
+		return imageOpacity;
+	}
+
+	private void setImageOpacity(float opacity) {
+		this.imageOpacity = opacity;
 	}
 
 	private boolean isLastAnimating() {
@@ -334,17 +388,19 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 
 		@Override
 		protected void updateStateBetweenPaints(Graphics2D g, long elapsedTimeMillis) {
+			updateImageOpacityOverTime();
 			updateStateOverTime();
 		}
 
 		@Override
 		protected void doPaintComponent(Graphics2D g) {
-			if (isOpaque() && !isImageAlwaysCoveringUI()) {
+			float opacity = getImageOpacity();
+			if (isOpaque() && !(isImageAlwaysCoveringUI() && opacity == 1f)) {
 				paintBackground(g);
 			}
 			Image image = getImage();
 			if (image != null) {
-				paintImage(g, image, getState());
+				paintImage(g, image, getState(), opacity);
 			}
 			Image overlay = getImageOverlay();
 			if (overlay != null) {
@@ -352,12 +408,15 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 			}
 		}
 
-		protected void paintImage(Graphics2D g, Image image, SlidingImageState state) {
-			Graphics2D gimg = (Graphics2D) g.create();
-			gimg.translate(getWidth() / 2, getHeight() / 2);
-			gimg.transform(state.getTransform());
-			gimg.drawImage(image, 0, 0, null);
-			gimg.dispose();
+		protected void paintImage(Graphics2D g, Image image, SlidingImageState state, float opacity) {
+			if (opacity > 0f) {
+				Graphics2D gimg = (Graphics2D) g.create();
+				gimg.translate(getWidth() / 2, getHeight() / 2);
+				gimg.transform(state.getTransform());
+				gimg.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+				gimg.drawImage(image, 0, 0, null);
+				gimg.dispose();
+			}
 		}
 
 		protected void paintImageOverlay(Graphics2D g, Image overlay) {

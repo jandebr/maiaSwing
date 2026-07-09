@@ -55,9 +55,9 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 	private long maximumImageDisplayTimeMillis;
 
-	private long imageFadeInTimeMillis;
+	private long imageFadeInDurationMillis;
 
-	private long imageFadeOutTimeMillis;
+	private long imageFadeOutDurationMillis;
 
 	private long timeMillisBetweenImages;
 
@@ -91,8 +91,8 @@ public class SlidingImageShowBuilder implements Cloneable {
 		withImageSlidingVelocity(40);
 		withMinimumImageDisplayTimeMillis(12000L);
 		withMaximumImageDisplayTimeMillis(16000L);
-		withImageFadeInTimeMillis(4000L);
-		withImageFadeOutTimeMillis(4000L);
+		withImageFadeInDurationMillis(4000L);
+		withImageFadeOutDurationMillis(4000L);
 		withTimeMillisBetweenImages(1000L);
 		withRefreshRate(25);
 		withPathGenerationAttemptsPerImage(3);
@@ -116,8 +116,8 @@ public class SlidingImageShowBuilder implements Cloneable {
 		clone.withImageSlidingVelocity(getImageSlidingVelocity());
 		clone.withMinimumImageDisplayTimeMillis(getMinimumImageDisplayTimeMillis());
 		clone.withMaximumImageDisplayTimeMillis(getMaximumImageDisplayTimeMillis());
-		clone.withImageFadeInTimeMillis(getImageFadeInTimeMillis());
-		clone.withImageFadeOutTimeMillis(getImageFadeOutTimeMillis());
+		clone.withImageFadeInDurationMillis(getImageFadeInDurationMillis());
+		clone.withImageFadeOutDurationMillis(getImageFadeOutDurationMillis());
 		clone.withTimeMillisBetweenImages(getTimeMillisBetweenImages());
 		clone.withRefreshRate(getRefreshRate());
 		clone.withPathGenerationAttemptsPerImage(getPathGenerationAttemptsPerImage());
@@ -131,9 +131,7 @@ public class SlidingImageShowBuilder implements Cloneable {
 	}
 
 	private SlidingImageShow buildImpl() {
-		SlidingImageComponent component = createSlidingImageComponent();
-		ColorOverlayComponent overlay = createColorOverlayComponent(component);
-		return new SlidingImageShowImpl(component, overlay);
+		return new SlidingImageShowImpl(createSlidingImageComponent());
 	}
 
 	private SlidingImageComponent createSlidingImageComponent() {
@@ -236,13 +234,13 @@ public class SlidingImageShowBuilder implements Cloneable {
 		return this;
 	}
 
-	public SlidingImageShowBuilder withImageFadeInTimeMillis(long timeMillis) {
-		this.imageFadeInTimeMillis = timeMillis;
+	public SlidingImageShowBuilder withImageFadeInDurationMillis(long durationMillis) {
+		this.imageFadeInDurationMillis = durationMillis;
 		return this;
 	}
 
-	public SlidingImageShowBuilder withImageFadeOutTimeMillis(long timeMillis) {
-		this.imageFadeOutTimeMillis = timeMillis;
+	public SlidingImageShowBuilder withImageFadeOutDurationMillis(long durationMillis) {
+		this.imageFadeOutDurationMillis = durationMillis;
 		return this;
 	}
 
@@ -325,12 +323,12 @@ public class SlidingImageShowBuilder implements Cloneable {
 		return maximumImageDisplayTimeMillis;
 	}
 
-	public long getImageFadeInTimeMillis() {
-		return imageFadeInTimeMillis;
+	public long getImageFadeInDurationMillis() {
+		return imageFadeInDurationMillis;
 	}
 
-	public long getImageFadeOutTimeMillis() {
-		return imageFadeOutTimeMillis;
+	public long getImageFadeOutDurationMillis() {
+		return imageFadeOutDurationMillis;
 	}
 
 	public long getTimeMillisBetweenImages() {
@@ -388,19 +386,12 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 		private SlidingImageComponent component;
 
-		private ColorOverlayComponent overlay;
-
 		private boolean started;
 
 		private boolean stopped;
 
-		private long timeToStartFadeOut = Long.MAX_VALUE;
-
-		private long imageDisplayEndTime;
-
-		public SlidingImageShowImpl(SlidingImageComponent component, ColorOverlayComponent overlay) {
+		public SlidingImageShowImpl(SlidingImageComponent component) {
 			this.component = component;
-			this.overlay = overlay;
 			component.addListener(this);
 		}
 
@@ -457,15 +448,11 @@ public class SlidingImageShowBuilder implements Cloneable {
 		}
 
 		private void animateImageOverPath(Image image, SlidingImagePath path) {
-			long displayTime = getImageDisplayTimeMillis(path);
-			long fadeInTime = Math.min(getImageFadeInTimeMillis(), displayTime);
-			long fadeOutTime = Math.min(getImageFadeOutTimeMillis(), displayTime - fadeInTime);
 			getComponent().setImageAlwaysCoveringUI(path.isInsideImage());
+			getComponent().setFadeInDurationMillis(getImageFadeInDurationMillis());
+			getComponent().setFadeOutDurationMillis(getImageFadeOutDurationMillis());
 			getComponent().changeImage(image);
-			getComponent().animatePath(path, displayTime);
-			getOverlay().animateToFullTranslucency(fadeInTime);
-			setImageDisplayEndTime(System.currentTimeMillis() + displayTime);
-			setTimeToStartFadeOut(getImageDisplayEndTime() - fadeOutTime);
+			getComponent().animatePath(path, getImageDisplayTimeMillis(path));
 		}
 
 		private Image getNextImage() {
@@ -508,32 +495,19 @@ public class SlidingImageShowBuilder implements Cloneable {
 		}
 
 		@Override
-		public synchronized void notifyStateChanged(SlidingImageComponent component) {
-			if (System.currentTimeMillis() >= getTimeToStartFadeOut()) {
-				getOverlay().animateToFullOpacity(getImageDisplayEndTime() - System.currentTimeMillis());
-				setTimeToStartFadeOut(Long.MAX_VALUE);
-			}
-		}
-
-		@Override
 		public synchronized void notifyStopAnimating(SlidingImageComponent component) {
 			if (!isStopped()) {
-				getOverlay().makeFullyOpaque();
 				animateNextImage(getTimeMillisBetweenImages());
 			}
 		}
 
 		@Override
 		public JComponent getUI() {
-			return getOverlay().getUI();
+			return getComponent().getUI();
 		}
 
 		private SlidingImageComponent getComponent() {
 			return component;
-		}
-
-		private ColorOverlayComponent getOverlay() {
-			return overlay;
 		}
 
 		private boolean isStarted() {
@@ -550,22 +524,6 @@ public class SlidingImageShowBuilder implements Cloneable {
 
 		private void setStopped(boolean stopped) {
 			this.stopped = stopped;
-		}
-
-		private long getTimeToStartFadeOut() {
-			return timeToStartFadeOut;
-		}
-
-		private void setTimeToStartFadeOut(long time) {
-			this.timeToStartFadeOut = time;
-		}
-
-		private long getImageDisplayEndTime() {
-			return imageDisplayEndTime;
-		}
-
-		private void setImageDisplayEndTime(long time) {
-			this.imageDisplayEndTime = time;
 		}
 
 	}
