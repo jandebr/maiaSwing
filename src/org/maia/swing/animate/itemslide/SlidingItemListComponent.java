@@ -1017,11 +1017,9 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 				if (backBuffer == null || backBuffer.getWidth() != w || backBuffer.getHeight() != h) {
 					if (backBuffer != null) {
 						backBuffer.flush();
-					} else {
-						// first use of back buffer
-						setRepaintFully(true);
 					}
 					backBuffer = createVolatileImage(w, h + 1);
+					setRepaintFully(true);
 				}
 				boolean redo = false;
 				do {
