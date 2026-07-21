@@ -1013,12 +1013,12 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 			if (isOptimizedRenderingEnabled()) {
 				VolatileImage backBuffer = getVolatileBackBuffer();
 				int w = getWidth();
-				int h = getHeight();
+				int h = getHeight() + 1; // plus 1 to avoid the bottom line being clipped from the back buffer
 				if (backBuffer == null || backBuffer.getWidth() != w || backBuffer.getHeight() != h) {
 					if (backBuffer != null) {
 						backBuffer.flush();
 					}
-					backBuffer = createVolatileImage(w, h + 1);
+					backBuffer = createVolatileImage(w, h);
 					setRepaintFully(true);
 				}
 				boolean redo = false;
@@ -1029,7 +1029,7 @@ public class SlidingItemListComponent extends BaseAnimatedComponent implements K
 						setRepaintFully(true);
 					} else if (val == VolatileImage.IMAGE_INCOMPATIBLE) {
 						// old back buffer doesn't work with new GraphicsConfig; re-create it
-						backBuffer = createVolatileImage(w, h + 1);
+						backBuffer = createVolatileImage(w, h);
 						setRepaintFully(true);
 					}
 					Graphics2D gImg = backBuffer.createGraphics();
