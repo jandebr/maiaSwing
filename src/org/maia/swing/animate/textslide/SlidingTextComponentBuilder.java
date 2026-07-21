@@ -47,6 +47,8 @@ public class SlidingTextComponentBuilder implements Cloneable {
 
 	private Dimension maximumSize; // nullable
 
+	private boolean higherQualityRenderingEnabled;
+
 	private boolean repaintClientDriven;
 
 	public static Font defaultFont = new Font(Font.DIALOG, Font.PLAIN, 16);
@@ -67,6 +69,7 @@ public class SlidingTextComponentBuilder implements Cloneable {
 		withLineWidth(400);
 		withLinesInView(10);
 		withLinesInOverflowGradient(2);
+		withHigherQualityRenderingEnabled(true);
 		withRepaintClientDriven(false);
 	}
 
@@ -87,6 +90,7 @@ public class SlidingTextComponentBuilder implements Cloneable {
 		clone.withLinesInOverflowGradient(getLinesInOverflowGradient());
 		if (getMaximumSize() != null)
 			clone.withMaximumSize(new Dimension(getMaximumSize()));
+		clone.withHigherQualityRenderingEnabled(isHigherQualityRenderingEnabled());
 		clone.withRepaintClientDriven(isRepaintClientDriven());
 		return clone;
 	}
@@ -119,6 +123,7 @@ public class SlidingTextComponentBuilder implements Cloneable {
 			comp.addTextLine(lineLabel);
 		}
 		comp.fitSlidingRangeToText();
+		comp.setHigherQualityRenderingEnabled(isHigherQualityRenderingEnabled());
 		comp.setRepaintClientDriven(isRepaintClientDriven());
 		return comp;
 	}
@@ -288,6 +293,11 @@ public class SlidingTextComponentBuilder implements Cloneable {
 		return this;
 	}
 
+	public SlidingTextComponentBuilder withHigherQualityRenderingEnabled(boolean enabled) {
+		this.higherQualityRenderingEnabled = enabled;
+		return this;
+	}
+
 	public SlidingTextComponentBuilder withRepaintClientDriven(boolean clientDriven) {
 		this.repaintClientDriven = clientDriven;
 		return this;
@@ -347,6 +357,10 @@ public class SlidingTextComponentBuilder implements Cloneable {
 
 	public Dimension getMaximumSize() {
 		return maximumSize;
+	}
+
+	public boolean isHigherQualityRenderingEnabled() {
+		return higherQualityRenderingEnabled;
 	}
 
 	public boolean isRepaintClientDriven() {
