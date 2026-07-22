@@ -13,6 +13,7 @@ import javax.swing.border.Border;
 import org.maia.graphics2d.image.ImageUtils;
 import org.maia.swing.animate.BaseAnimatedComponent;
 import org.maia.swing.animate.imageslide.path.SlidingImagePath;
+import org.maia.util.ColorUtils;
 import org.maia.util.GenericListenerList;
 
 public class SlidingImageComponent extends BaseAnimatedComponent {
@@ -46,6 +47,8 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 	private boolean imageAlwaysCoveringUi; // rendering hint, only set to true when guaranteed
 
 	private GenericListenerList<SlidingImageListener> listeners;
+
+	public static boolean fadeUsingCompositeMethod = true;
 
 	public SlidingImageComponent(Dimension size, Color background) {
 		super(size, background);
@@ -399,7 +402,7 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 				paintBackground(g);
 			}
 			Image image = getImage();
-			if (image != null) {
+			if (image != null && opacity > 0f) {
 				paintImage(g, image, getState(), opacity);
 			}
 			Image overlay = getImageOverlay();
@@ -409,14 +412,22 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 		}
 
 		protected void paintImage(Graphics2D g, Image image, SlidingImageState state, float opacity) {
-			if (opacity > 0f) {
-				Graphics2D gimg = (Graphics2D) g.create();
-				gimg.translate(getWidth() / 2, getHeight() / 2);
-				gimg.transform(state.getTransform());
-				gimg.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+			Graphics2D gimg = (Graphics2D) g.create();
+			gimg.translate(getWidth() / 2, getHeight() / 2);
+			gimg.transform(state.getTransform());
+			if (opacity < 1f) {
+				if (fadeUsingCompositeMethod) {
+					gimg.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+					gimg.drawImage(image, 0, 0, null);
+				} else {
+					gimg.drawImage(image, 0, 0, null);
+					g.setColor(ColorUtils.setTransparency(getBackground(), opacity));
+					g.fillRect(0, 0, getWidth(), getHeight());
+				}
+			} else {
 				gimg.drawImage(image, 0, 0, null);
-				gimg.dispose();
 			}
+			gimg.dispose();
 		}
 
 		protected void paintImageOverlay(Graphics2D g, Image overlay) {
