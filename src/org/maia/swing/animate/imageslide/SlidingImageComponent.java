@@ -395,7 +395,7 @@ public class SlidingImageComponent extends BaseAnimatedComponent {
 		@Override
 		protected void doPaintComponent(Graphics2D g) {
 			float opacity = getImageOpacity();
-			if (isOpaque() && !(isImageAlwaysCoveringUI() && opacity == 1f)) {
+			if (opacity == 0f || (isOpaque() && (!isImageAlwaysCoveringUI() || opacity < 1f))) {
 				paintBackground(g);
 			}
 			Image image = getImage();
